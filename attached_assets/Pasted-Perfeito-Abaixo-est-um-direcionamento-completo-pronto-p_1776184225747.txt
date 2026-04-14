@@ -1,0 +1,887 @@
+Perfeito. Abaixo está um **direcionamento completo, pronto para colar no Replit**, já adaptado para a tua ideia:
+
+* **sem landing page**
+* **sem dashboard**
+* **sem assinatura**
+* **sem fluxo SaaS complexo**
+* começa **direto na página 1 do onboarding**
+* termina em **preview + Stripe + entrega do currículo final**
+
+---
+
+# Prompt para o Replit
+
+Crie uma aplicação web focada em **um único funnel público** para gerar currículo por vaga com IA.
+
+## Objetivo do produto
+
+O produto **não é um SaaS com dashboard**.
+O produto é um **fluxo direto**:
+
+1. usuário entra direto no onboarding
+2. responde 7 páginas
+3. importa ou preenche o perfil base
+4. cola a vaga
+5. escolhe o modelo
+6. o sistema gera uma prévia
+7. o usuário vê valor
+8. paga no Stripe
+9. desbloqueia a versão final e baixa o PDF
+
+Não criar:
+
+* landing page
+* dashboard
+* sidebar
+* billing interno de SaaS
+* assinatura mensal
+* área logada obrigatória
+
+A home do app já deve abrir **direto na primeira página do onboarding**.
+
+---
+
+# Stack
+
+Usar:
+
+* **Next.js** ou **React + Vite**, mantendo a stack mais simples e estável no Replit
+* **TypeScript**
+* **Tailwind CSS**
+* componentes limpos e modernos
+* backend simples com rotas API
+* persistência em banco relacional ou simples com JSON/ORM, priorizando velocidade
+* **Stripe Checkout**
+* geração de PDF final
+* parser de currículo
+* integração com IA para:
+
+  * estruturar perfil base
+  * analisar vaga
+  * calcular score ATS estimado
+  * gerar versão otimizada do currículo
+
+## Prioridade de arquitetura
+
+A prioridade é:
+
+* fluxo rápido
+* UX limpa
+* persistência da sessão
+* geração confiável
+* pagamento funcional
+
+---
+
+# Estrutura principal do produto
+
+Criar **um funnel público** com uma sessão anônima persistida por `sessionId`.
+
+## Sessão pública
+
+Ao entrar no fluxo, criar uma sessão pública com um `sessionId` e salvar em localStorage/cookie.
+
+Essa sessão deve guardar:
+
+* respostas das páginas 1 a 7
+* dados do perfil base
+* dados da vaga
+* modelo escolhido
+* preview gerado
+* score ATS
+* status do pagamento
+* PDF final liberado ou não
+
+---
+
+# Fluxo completo
+
+## Etapas do funnel
+
+1. Página 1 — Objetivo atual
+2. Página 2 — Volume de candidaturas
+3. Página 3 — Está recebendo entrevistas?
+4. Página 4 — Como funciona
+5. Página 5 — Perfil base
+6. Página 6 — Cole a vaga
+7. Página 7 — Escolha do modelo
+8. Tela de geração
+9. Tela de preview bloqueado
+10. Tela de pagamento
+11. Tela final com currículo liberado
+
+---
+
+# Copy e comportamento de cada página
+
+## Página 1/7 — Objetivo atual
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Linha de apoio
+
+**Currículo otimizado por IA**
+
+### Pergunta
+
+**Qual seu objetivo agora?**
+
+### Texto de apoio
+
+**Isso nos ajuda a personalizar seu currículo para o momento certo da sua carreira.**
+
+### Opções em cards clicáveis
+
+1. **Conseguir uma entrevista**
+   Quero ser chamado para processos seletivos
+
+2. **Mudar de carreira**
+   Estou em transição para uma nova área
+
+3. **Negociar um aumento**
+   Quero valorizar meu perfil atual
+
+4. **Voltar ao mercado**
+   Estou retornando após um período fora
+
+### Prova social no rodapé
+
+**+2.300 currículos gerados essa semana**
+
+### Regras
+
+* obrigatório escolher uma opção
+* botão “Continuar” só ativa quando houver seleção
+
+### Dado salvo
+
+* `careerGoal`
+
+---
+
+## Página 2/7 — Volume de candidaturas
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Pergunta
+
+**Quantos currículos você envia por semana?**
+
+### Texto de apoio
+
+**Isso nos ajuda a entender seu momento na busca por emprego.**
+
+### Opções em cards clicáveis
+
+1. 🚀 **Nenhum ainda**
+   Estou começando agora
+
+2. 📨 **1 a 5**
+   Algumas candidaturas
+
+3. 📬 **6 a 10**
+   Estou ativo na busca
+
+4. 📮 **Mais de 10**
+   Candidatando bastante
+
+### Regras
+
+* obrigatório escolher uma opção
+
+### Dado salvo
+
+* `applicationVolume`
+
+---
+
+## Página 3/7 — Está recebendo entrevistas?
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Pergunta
+
+**Você está recebendo entrevistas?**
+
+### Texto de apoio
+
+**Seja honesto. Isso nos ajuda a posicionar melhor seu currículo.**
+
+### Opções
+
+1. **Sim, mas poucas**
+   Vamos aumentar suas chances.
+
+2. **Não, quase nenhuma**
+   Seu currículo pode estar sendo descartado.
+
+### Bloco educativo abaixo
+
+#### O problema
+
+**Grande parte dos currículos é descartada por robôs ATS antes de um recrutador ver. Esses sistemas procuram palavras-chave e uma estrutura que faça sentido para a vaga.**
+
+#### A solução
+
+**Nossa IA lê a vaga e reorganiza seu currículo para aumentar a aderência, destacar o que importa e melhorar suas chances de passar nos filtros.**
+
+### Regras
+
+* obrigatório escolher uma opção
+
+### Dado salvo
+
+* `interviewRate`
+
+---
+
+## Página 4/7 — Como funciona
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Headline
+
+**Vamos gerar um currículo otimizado para essa vaga**
+
+### Texto principal
+
+**O sistema lê a descrição da vaga e reorganiza seu currículo para aumentar suas chances de passar nos filtros e chamar atenção do recrutador.**
+
+### Blocos visuais
+
+#### Seu currículo base
+
+**A gente parte das suas informações e da vaga que você quer conquistar.**
+
+#### Otimização por vaga
+
+**A IA prioriza o que faz mais sentido para aquela oportunidade, sem você precisar refazer tudo manualmente.**
+
+### Lista de benefícios
+
+* Analisa a vaga e encaixa as palavras-chave mais importantes
+* Destaca sua experiência de forma mais relevante para o recrutador
+* Entrega um currículo mais limpo, profissional e pronto para ATS
+
+### Fechamento
+
+**Em poucos passos, você vai sair daqui com um currículo mais forte para a vaga certa.**
+
+### Regras
+
+* página informativa
+* só avançar
+
+### Dado salvo
+
+* nenhum
+
+---
+
+## Página 5/7 — Perfil base
+
+Essa é a página mais importante.
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Seção principal
+
+**Perfil base**
+
+### Bloco de apoio
+
+**Suas informações**
+Esse é o perfil base que vamos usar para criar versões sob medida por vaga.
+
+### Entrada de dados
+
+Mostrar opções claras:
+
+* **Importar via LinkedIn**
+* **Importar PDF ou imagem**
+* **Preencher manualmente**
+
+### Texto auxiliar
+
+**Substitua seus dados via LinkedIn, PDF ou imagem**
+
+### Área de status
+
+Mostrar contadores:
+
+* Experiências
+* Skills
+* Destaques
+
+### Campos obrigatórios visíveis
+
+* Nome completo
+* Cargo atual ou objetivo
+* Email
+* Telefone
+* Localização
+* LinkedIn
+* Site ou portfólio
+* Resumo profissional
+
+### Seções estruturadas editáveis
+
+* Experiências
+* Skills
+* Formação
+* Projetos
+* Certificações
+* Idiomas
+
+### Comportamento esperado
+
+A página deve suportar três caminhos:
+
+#### Caminho A — URL do LinkedIn
+
+* usuário cola a URL
+* sistema tenta importar os dados
+* preenche os campos estruturados
+* mostra estado de sucesso ou erro
+
+#### Caminho B — PDF/DOCX/imagem
+
+* upload do arquivo
+* sistema extrai e estrutura os dados
+* preenche os campos
+* mostra estado de sucesso ou erro
+
+#### Caminho C — manual
+
+* usuário digita tudo
+* pode adicionar experiências e skills manualmente
+
+### Estado de sucesso da própria página
+
+Após importar ou preencher:
+
+* mostrar os dados completos
+* permitir revisão/edição
+* permitir confirmar e seguir
+
+### Bloco de suporte
+
+**Precisa de ajuda para importar ou preencher seu perfil?**
+Se o LinkedIn ou o PDF não estiverem funcionando como você espera, nosso suporte te ajuda a seguir sem travar o funil.
+
+Botão:
+**Falar com Suporte**
+
+### Critério mínimo para continuar
+
+Exigir:
+
+* nome
+* email
+* cargo atual ou objetivo
+* e pelo menos um entre:
+
+  * resumo profissional
+  * 1 experiência
+
+### Dados salvos
+
+* `baseProfile`
+* `resumeDraft`
+* `profileSourceType`
+* `linkedinUrl`
+* `rawImportedText`
+* dados estruturados em JSON
+
+---
+
+## Página 6/7 — Cole a vaga
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Headline
+
+**Cole a vaga que você quer conquistar**
+
+### Texto de apoio
+
+**Cole a descrição completa da vaga. A IA vai adaptar seu currículo para dar match nela.**
+
+### Campo principal
+
+Textarea grande para colar:
+
+* título da vaga
+* responsabilidades
+* requisitos
+* tecnologias
+* detalhes relevantes
+
+### Exemplo
+
+**Ex: título da vaga, responsabilidades, requisitos e tecnologias citadas na descrição.**
+
+### Linha auxiliar
+
+**Não tem uma vaga específica? Use um modelo**
+
+### Dica
+
+**Quanto mais detalhes você fornecer sobre a vaga, melhor a IA conseguirá destacar experiências, palavras-chave e skills relevantes.**
+
+### Suporte
+
+**Não sabe qual vaga colar aqui?**
+Nosso suporte pode te orientar sobre que tipo de descrição usar para gerar um currículo mais aderente.
+
+Botão:
+**Falar com Suporte**
+
+### Regras
+
+* permitir colar vaga real
+* permitir seguir com conteúdo simples como fallback
+
+### Dados salvos
+
+* `jobDescription`
+* `jobTitle` opcional
+* `company` opcional
+
+---
+
+## Página 7/7 — Escolha do modelo
+
+### Título
+
+**Gerar currículo por vaga**
+
+### Subtítulo
+
+**Monte uma versão mais forte do seu currículo com base na vaga que você quer conquistar.**
+
+### Headline
+
+**Escolha o modelo**
+
+### Texto de apoio
+
+**Selecione o layout que melhor destaca sua experiência.**
+
+### Opções
+
+#### Moderno
+
+**Moderno**
+Limpo e direto. Layout alinhado à esquerda. Perfeito para tecnologia e startups.
+
+#### Clássico
+
+**Clássico**
+Elegante e tradicional. Ideal para áreas jurídicas e corporativas.
+
+### Suporte
+
+**Está em dúvida sobre o modelo?**
+Se quiser ajuda para escolher entre o clássico e o moderno, nosso suporte pode te orientar rápido no WhatsApp.
+
+Botão:
+**Falar com Suporte**
+
+### Regras
+
+* obrigatório escolher um modelo
+* ao concluir:
+
+  1. salva `templateChoice`
+  2. dispara geração
+  3. vai para a tela de geração
+
+### Dado salvo
+
+* `templateChoice`
+
+---
+
+# Tela de geração
+
+### Título
+
+**Gerando sua primeira versão**
+
+### Texto principal
+
+**Estamos gerando o seu currículo otimizado para a vaga.**
+
+### Texto secundário
+
+**Essa tela atualiza sozinha quando a geração terminar.**
+
+### Suporte
+
+**Travou ou demorou demais?**
+Fale com o suporte e informe o ID do currículo para a gente verificar rapidamente.
+
+Botão:
+**Falar com Suporte**
+
+### Função
+
+Essa tela precisa:
+
+* rodar análise do perfil
+* rodar análise da vaga
+* calcular score ATS estimado
+* gerar preview inicial do currículo
+* atualizar o status automaticamente
+
+### Dados gerados
+
+* `atsScore`
+* `analysisJson`
+* `previewResume`
+* `generationStatus`
+
+---
+
+# Tela de preview bloqueado
+
+### Título
+
+**Currículo profissional**
+
+### Subtítulo
+
+**Veja a prévia inicial e desbloqueie a geração completa para editar e baixar o PDF final.**
+
+### Bloco principal
+
+* botão/CTA: **Desbloqueie para editar**
+* label: **Prévia em tempo real**
+* label: **Como o PDF vai ficar**
+
+### Estado visual
+
+* currículo com blur
+* censura
+* marca d’água
+* preview renderizado
+
+### Bloco de bloqueio
+
+**Currículo bloqueado**
+Desbloqueie para remover o blur, liberar a edição completa e baixar o PDF final.
+
+### Texto auxiliar
+
+**Esta é uma prévia inicial com blur, censura e marca d’água. Depois do desbloqueio você libera a versão completa do currículo e o PDF final.**
+
+### ATS e valor percebido
+
+Mostrar também:
+
+* score ATS estimado
+* palavras-chave encontradas
+* palavras-chave faltantes
+* principais melhorias aplicadas
+* aderência à vaga
+
+### Abas ou áreas
+
+* **Prévia**
+* **Editor**
+  Na V1, o editor pode ficar bloqueado ou simplificado, mas a área precisa estar prevista.
+
+### Suporte
+
+**Precisa de ajuda com esse currículo?**
+Se o preview não carregar direito no seu celular ou você tiver qualquer dúvida sobre desbloqueio, nosso suporte resolve com você no WhatsApp.
+
+Botão:
+**Falar com Suporte**
+
+---
+
+# Tela de cobrança
+
+Como você quer velocidade, **não criar créditos nem pacotes agora**.
+
+## Produto único
+
+**1 currículo otimizado por vaga = R$ 19,90**
+
+### Headline
+
+**Desbloqueie seu currículo completo**
+
+### O que o usuário recebe
+
+* versão completa sem blur
+* currículo otimizado por vaga
+* score ATS e melhorias aplicadas
+* PDF final pronto para baixar
+* edição final do conteúdo liberado
+
+### Garantia
+
+**Garantia de qualidade: se você não gostar do resultado, devolvemos seu dinheiro.**
+
+### Prova social
+
+Mostrar:
+
+* nota média
+* número de avaliações
+* pequenos depoimentos
+* print-style blocks de feedback
+
+### CTA
+
+**Desbloquear por R$ 19,90**
+
+---
+
+# Stripe
+
+## O que implementar
+
+Usar **Stripe Checkout**.
+
+### Lógica
+
+Ao clicar em “Desbloquear por R$ 19,90”:
+
+1. criar `checkout session`
+2. enviar `publicSessionId` no metadata
+3. redirecionar para o Stripe
+4. após pagamento, webhook confirma
+5. liberar o currículo final
+
+## Não criar
+
+* assinatura
+* planos mensais
+* créditos
+* billing de usuário
+* carteira de saldo
+
+## Tela de sucesso
+
+Depois do pagamento:
+
+* mostrar confirmação
+* voltar para a tela final da sessão
+* liberar preview completo e PDF
+
+---
+
+# Tela final
+
+### Headline
+
+**Seu currículo está pronto**
+
+### O que mostrar
+
+* preview sem blur
+* PDF final
+* botão de download
+* botão opcional:
+
+  * **Gerar outro currículo**
+* botão opcional:
+
+  * **Salvar meus dados para próxima vez**
+
+### Função
+
+Encerrar o fluxo com entrega simples e direta.
+
+---
+
+# Estrutura técnica
+
+## Frontend
+
+* React/Next.js
+* TypeScript
+* Tailwind
+* componente único de funnel com páginas separadas
+* progress bar
+* persistência por sessão pública
+
+## Backend
+
+Criar rotas para:
+
+* iniciar sessão pública
+* atualizar sessão
+* importar perfil
+* upload de currículo
+* analisar vaga
+* gerar preview
+* criar checkout Stripe
+* receber webhook Stripe
+* liberar resultado final
+* baixar PDF
+
+## IA
+
+Usar IA para:
+
+* estruturar perfil importado
+* interpretar a vaga
+* calcular score ATS estimado
+* gerar versão otimizada do currículo
+
+## Geração de PDF
+
+Renderizar o currículo final em PDF com base no modelo escolhido:
+
+* moderno
+* clássico
+
+---
+
+# Banco de dados
+
+Criar uma tabela principal simples, como:
+
+## `public_resume_sessions`
+
+Campos sugeridos:
+
+* `id`
+* `status`
+* `career_goal`
+* `application_volume`
+* `interview_rate`
+* `template_choice`
+* `full_name`
+* `email`
+* `phone`
+* `location`
+* `linkedin_url`
+* `portfolio_url`
+* `summary`
+* `raw_profile_text`
+* `profile_source_type`
+* `job_title`
+* `company`
+* `job_description`
+* `structured_profile_json`
+* `job_analysis_json`
+* `ats_score`
+* `preview_resume_json`
+* `final_resume_json`
+* `payment_status`
+* `price_cents`
+* `stripe_checkout_session_id`
+* `created_at`
+* `updated_at`
+
+Na V1, pode guardar bastante coisa em JSON para ganhar velocidade.
+
+---
+
+# Regras importantes
+
+## Não criar
+
+* landing page
+* dashboard
+* sidebar
+* área de conta obrigatória
+* billing complexo
+* assinatura
+* créditos
+
+## Criar
+
+* funnel direto
+* onboarding de 7 páginas
+* preview com valor
+* pagamento único
+* entrega simples
+
+---
+
+# Resultado esperado
+
+A aplicação precisa entregar isto:
+
+1. usuário entra direto no onboarding
+2. termina as 7 páginas
+3. o sistema gera uma prévia
+4. o usuário vê o valor
+5. paga R$ 19,90
+6. recebe o currículo final
+
+---
+
+# Observações finais para implementação
+
+## Importação do perfil
+
+A página 5 deve aceitar:
+
+* URL de LinkedIn
+* PDF/DOCX/imagem
+* preenchimento manual
+
+## ATS
+
+O ATS deve aparecer:
+
+* como explicação no onboarding
+* como score/diagnóstico no preview
+
+## Copy
+
+Usar exatamente a lógica do onboarding acima, sem transformar em wizard genérico.
+
+## UX
+
+Interface limpa, direta, moderna, com cara de produto pronto, não de formulário improvisado.
+
+---
+
+# Entrega que eu quero
+
+Construa esse produto completo, começando direto da página 1 do onboarding, sem landing page, sem dashboard e sem assinatura. O fluxo deve ser rápido, elegante e orientado à conversão. O foco é vender uma solução pontual: gerar um currículo otimizado por vaga, mostrar a prévia, cobrar uma única vez e entregar o PDF final.
