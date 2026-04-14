@@ -3,13 +3,18 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Currículo por Vaga com IA
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: sessions
+    description: Resume session operations
+  - name: stripe
+    description: Stripe payment operations
+
 paths:
   /healthz:
     get:
@@ -24,6 +29,202 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sessions:
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create a new resume session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionBody"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+
+  /sessions/{sessionId}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Get session by ID
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateSession
+      tags: [sessions]
+      summary: Update session data
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSessionBody"
+      responses:
+        "200":
+          description: Session updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+
+  /sessions/{sessionId}/import-linkedin:
+    post:
+      operationId: importLinkedin
+      tags: [sessions]
+      summary: Import profile from LinkedIn URL
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportLinkedinBody"
+      responses:
+        "200":
+          description: Profile imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+
+  /sessions/{sessionId}/generate:
+    post:
+      operationId: generateResume
+      tags: [sessions]
+      summary: Trigger AI resume generation
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationStatusResponse"
+
+  /sessions/{sessionId}/generation-status:
+    get:
+      operationId: getGenerationStatus
+      tags: [sessions]
+      summary: Get generation status
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationStatusResponse"
+
+  /sessions/{sessionId}/checkout:
+    post:
+      operationId: createCheckout
+      tags: [sessions]
+      summary: Create Stripe checkout session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Checkout URL returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+
+  /sessions/{sessionId}/download-pdf:
+    get:
+      operationId: downloadPdf
+      tags: [sessions]
+      summary: Download final PDF (requires paid session)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "402":
+          description: Payment required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stripe/webhook:
+    post:
+      operationId: stripeWebhook
+      tags: [stripe]
+      summary: Handle Stripe webhook events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Webhook handled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                required:
+                  - received
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +235,296 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    CreateSessionBody:
+      type: object
+      properties:
+        careerGoal:
+          type: string
+          nullable: true
+        applicationVolume:
+          type: string
+          nullable: true
+
+    UpdateSessionBody:
+      type: object
+      properties:
+        careerGoal:
+          type: string
+          nullable: true
+        applicationVolume:
+          type: string
+          nullable: true
+        interviewRate:
+          type: string
+          nullable: true
+        templateChoice:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        linkedinUrl:
+          type: string
+          nullable: true
+        portfolioUrl:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        profileSourceType:
+          type: string
+          nullable: true
+        structuredProfileJson:
+          type: object
+          nullable: true
+        jobTitle:
+          type: string
+          nullable: true
+        company:
+          type: string
+          nullable: true
+        jobDescription:
+          type: string
+          nullable: true
+
+    ImportLinkedinBody:
+      type: object
+      properties:
+        linkedinUrl:
+          type: string
+      required:
+        - linkedinUrl
+
+    ImportResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        profile:
+          $ref: "#/components/schemas/StructuredProfile"
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      required:
+        - success
+
+    StructuredProfile:
+      type: object
+      properties:
+        fullName:
+          type: string
+          nullable: true
+        currentRole:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        linkedinUrl:
+          type: string
+          nullable: true
+        portfolioUrl:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        experiences:
+          type: array
+          items:
+            $ref: "#/components/schemas/Experience"
+        skills:
+          type: array
+          items:
+            type: string
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/Education"
+        certifications:
+          type: array
+          items:
+            type: string
+        languages:
+          type: array
+          items:
+            type: string
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+
+    Experience:
+      type: object
+      properties:
+        title:
+          type: string
+        company:
+          type: string
+        period:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+      required:
+        - title
+        - company
+
+    Education:
+      type: object
+      properties:
+        degree:
+          type: string
+        institution:
+          type: string
+        period:
+          type: string
+          nullable: true
+      required:
+        - degree
+        - institution
+
+    Project:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+      required:
+        - name
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        careerGoal:
+          type: string
+          nullable: true
+        applicationVolume:
+          type: string
+          nullable: true
+        interviewRate:
+          type: string
+          nullable: true
+        templateChoice:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        linkedinUrl:
+          type: string
+          nullable: true
+        portfolioUrl:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        profileSourceType:
+          type: string
+          nullable: true
+        structuredProfileJson:
+          nullable: true
+        jobTitle:
+          type: string
+          nullable: true
+        company:
+          type: string
+          nullable: true
+        jobDescription:
+          type: string
+          nullable: true
+        atsScore:
+          type: number
+          nullable: true
+        jobAnalysisJson:
+          nullable: true
+        previewResumeJson:
+          nullable: true
+        finalResumeJson:
+          nullable: true
+        paymentStatus:
+          type: string
+          nullable: true
+        generationStatus:
+          type: string
+          nullable: true
+        stripeCheckoutSessionId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - status
+        - createdAt
+        - updatedAt
+
+    GenerationStatusResponse:
+      type: object
+      properties:
+        generationStatus:
+          type: string
+        atsScore:
+          type: number
+          nullable: true
+        previewResumeJson:
+          nullable: true
+        jobAnalysisJson:
+          nullable: true
+      required:
+        - generationStatus
+
+    CheckoutResponse:
+      type: object
+      properties:
+        checkoutUrl:
+          type: string
+      required:
+        - checkoutUrl
