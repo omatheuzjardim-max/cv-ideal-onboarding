@@ -22,12 +22,27 @@ export function FunnelProvider({ children }: { children: ReactNode }) {
   const createSession = useCreateSession();
   const updateSession = useUpdateSession();
 
-  const { data: session, isLoading: isSessionLoading } = useGetSession(sessionId || "", {
+  const {
+    data: session,
+    isLoading: isSessionLoading,
+    isError: isSessionError,
+    error: sessionError,
+  } = useGetSession(sessionId || "", {
     query: {
       enabled: !!sessionId,
       queryKey: getGetSessionQueryKey(sessionId || ""),
+      retry: false,
     }
   });
+
+  useEffect(() => {
+    const status = (sessionError as { status?: number } | null | undefined)?.status;
+    if (!sessionId || !isSessionError || status !== 404) return;
+
+    localStorage.removeItem("resumeSessionId");
+    queryClient.removeQueries({ queryKey: getGetSessionQueryKey(sessionId) });
+    setSessionId(null);
+  }, [isSessionError, queryClient, sessionError, sessionId]);
 
   useEffect(() => {
     // Check URL params for payment success

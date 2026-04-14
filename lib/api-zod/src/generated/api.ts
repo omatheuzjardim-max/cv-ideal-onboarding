@@ -41,7 +41,6 @@ export const GetSessionResponse = zod.object({
   email: zod.string().nullish(),
   phone: zod.string().nullish(),
   location: zod.string().nullish(),
-  linkedinUrl: zod.string().nullish(),
   portfolioUrl: zod.string().nullish(),
   summary: zod.string().nullish(),
   profileSourceType: zod.string().nullish(),
@@ -76,7 +75,6 @@ export const UpdateSessionBody = zod.object({
   email: zod.string().nullish(),
   phone: zod.string().nullish(),
   location: zod.string().nullish(),
-  linkedinUrl: zod.string().nullish(),
   portfolioUrl: zod.string().nullish(),
   summary: zod.string().nullish(),
   profileSourceType: zod.string().nullish(),
@@ -97,7 +95,6 @@ export const UpdateSessionResponse = zod.object({
   email: zod.string().nullish(),
   phone: zod.string().nullish(),
   location: zod.string().nullish(),
-  linkedinUrl: zod.string().nullish(),
   portfolioUrl: zod.string().nullish(),
   summary: zod.string().nullish(),
   profileSourceType: zod.string().nullish(),
@@ -114,66 +111,6 @@ export const UpdateSessionResponse = zod.object({
   stripeCheckoutSessionId: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
-});
-
-/**
- * @summary Import profile from LinkedIn URL
- */
-export const ImportLinkedinParams = zod.object({
-  sessionId: zod.coerce.string(),
-});
-
-export const ImportLinkedinBody = zod.object({
-  linkedinUrl: zod.string().nullish(),
-  rawProfileText: zod.string().nullish(),
-});
-
-export const ImportLinkedinResponse = zod.object({
-  success: zod.boolean(),
-  profile: zod
-    .object({
-      fullName: zod.string().nullish(),
-      currentRole: zod.string().nullish(),
-      email: zod.string().nullish(),
-      phone: zod.string().nullish(),
-      location: zod.string().nullish(),
-      linkedinUrl: zod.string().nullish(),
-      portfolioUrl: zod.string().nullish(),
-      summary: zod.string().nullish(),
-      experiences: zod
-        .array(
-          zod.object({
-            title: zod.string(),
-            company: zod.string(),
-            period: zod.string().nullish(),
-            description: zod.string().nullish(),
-          }),
-        )
-        .optional(),
-      skills: zod.array(zod.string()).optional(),
-      education: zod
-        .array(
-          zod.object({
-            degree: zod.string(),
-            institution: zod.string(),
-            period: zod.string().nullish(),
-          }),
-        )
-        .optional(),
-      certifications: zod.array(zod.string()).optional(),
-      languages: zod.array(zod.string()).optional(),
-      projects: zod
-        .array(
-          zod.object({
-            name: zod.string(),
-            description: zod.string().nullish(),
-            url: zod.string().nullish(),
-          }),
-        )
-        .optional(),
-    })
-    .nullish(),
-  error: zod.string().nullish(),
 });
 
 /**

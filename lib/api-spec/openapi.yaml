@@ -95,30 +95,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Session"
 
-  /sessions/{sessionId}/import-linkedin:
-    post:
-      operationId: importLinkedin
-      tags: [sessions]
-      summary: Import profile from LinkedIn URL
-      parameters:
-        - name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ImportLinkedinBody"
-      responses:
-        "200":
-          description: Profile imported
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ImportResult"
-
   /sessions/{sessionId}/generate:
     post:
       operationId: generateResume
@@ -280,9 +256,6 @@ components:
         location:
           type: string
           nullable: true
-        linkedinUrl:
-          type: string
-          nullable: true
         portfolioUrl:
           type: string
           nullable: true
@@ -304,17 +277,6 @@ components:
         jobDescription:
           type: string
           nullable: true
-
-    ImportLinkedinBody:
-      type: object
-      properties:
-        linkedinUrl:
-          type: string
-          nullable: true
-        rawProfileText:
-          type: string
-          nullable: true
-          description: Raw text pasted from the LinkedIn profile page for accurate extraction
 
     ImportResult:
       type: object
@@ -346,9 +308,6 @@ components:
           type: string
           nullable: true
         location:
-          type: string
-          nullable: true
-        linkedinUrl:
           type: string
           nullable: true
         portfolioUrl:
@@ -456,9 +415,6 @@ components:
           type: string
           nullable: true
         location:
-          type: string
-          nullable: true
-        linkedinUrl:
           type: string
           nullable: true
         portfolioUrl:

@@ -16,7 +16,6 @@ export interface UpdateSessionBody {
   email?: string | null;
   phone?: string | null;
   location?: string | null;
-  linkedinUrl?: string | null;
   portfolioUrl?: string | null;
   summary?: string | null;
   profileSourceType?: string | null;

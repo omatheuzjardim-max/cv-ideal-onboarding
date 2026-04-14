@@ -13,7 +13,6 @@ export const resumeSessionsTable = pgTable("resume_sessions", {
   email: text("email"),
   phone: text("phone"),
   location: text("location"),
-  linkedinUrl: text("linkedin_url"),
   portfolioUrl: text("portfolio_url"),
   summary: text("summary"),
   rawProfileText: text("raw_profile_text"),

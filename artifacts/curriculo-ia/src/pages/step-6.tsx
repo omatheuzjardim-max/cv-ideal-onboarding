@@ -7,7 +7,7 @@ import { Lightbulb } from "lucide-react";
 const genericJobDescription = `Analista de Marketing Digital
 
 Responsabilidades:
-- Planejar e executar campanhas de marketing digital (Google Ads, Meta Ads, LinkedIn)
+- Planejar e executar campanhas de marketing digital (Google Ads, Meta Ads)
 - Gerenciar redes sociais e criar conteúdo estratégico
 - Analisar métricas e KPIs de performance
 - Otimizar campanhas para conversão e ROI

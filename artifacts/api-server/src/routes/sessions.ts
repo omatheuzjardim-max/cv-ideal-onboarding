@@ -6,10 +6,103 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   CreateSessionBody,
   UpdateSessionBody,
-  ImportLinkedinBody,
 } from "@workspace/api-zod";
+import multer from "multer";
+import mammoth from "mammoth";
+import puppeteer from "puppeteer";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const router = Router();
+
+const placeholderValues = new Set([
+  "cargo",
+  "empresa",
+  "período",
+  "periodo",
+  "descrição",
+  "descricao",
+  "curso",
+  "instituição",
+  "instituicao",
+]);
+
+function cleanImportedText(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  if (placeholderValues.has(normalized.toLowerCase())) return undefined;
+  return normalized;
+}
+
+function cleanImportedProfile(profile: Record<string, unknown>) {
+  const experiences = Array.isArray(profile.experiences)
+    ? profile.experiences
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        .map((item) => ({
+          title: cleanImportedText(item.title),
+          company: cleanImportedText(item.company),
+          period: cleanImportedText(item.period),
+          description: cleanImportedText(item.description),
+        }))
+        .filter((item) => item.title || item.company || item.description)
+    : [];
+
+  const education = Array.isArray(profile.education)
+    ? profile.education
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        .map((item) => ({
+          degree: cleanImportedText(item.degree),
+          institution: cleanImportedText(item.institution),
+          period: cleanImportedText(item.period),
+        }))
+        .filter((item) => item.degree || item.institution)
+    : [];
+
+  const projects = Array.isArray(profile.projects)
+    ? profile.projects
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        .map((item) => ({
+          name: cleanImportedText(item.name),
+          description: cleanImportedText(item.description),
+          url: cleanImportedText(item.url),
+        }))
+        .filter((item) => item.name || item.description || item.url)
+    : [];
+
+  const stringList = (value: unknown) =>
+    Array.isArray(value)
+      ? value.map(cleanImportedText).filter((item): item is string => Boolean(item))
+      : [];
+
+  return {
+    fullName: cleanImportedText(profile.fullName) ?? null,
+    currentRole: cleanImportedText(profile.currentRole) ?? null,
+    email: cleanImportedText(profile.email) ?? null,
+    phone: cleanImportedText(profile.phone) ?? null,
+    location: cleanImportedText(profile.location) ?? null,
+    portfolioUrl: cleanImportedText(profile.portfolioUrl) ?? null,
+    summary: cleanImportedText(profile.summary) ?? null,
+    experiences,
+    skills: stringList(profile.skills),
+    education,
+    certifications: stringList(profile.certifications),
+    languages: stringList(profile.languages),
+    projects,
+  };
+}
+
+function hasUsefulImportedProfile(profile: ReturnType<typeof cleanImportedProfile>) {
+  return Boolean(
+    profile.fullName ||
+      profile.email ||
+      profile.phone ||
+      profile.summary ||
+      profile.experiences.length > 0 ||
+      profile.skills.length > 0 ||
+      profile.education.length > 0,
+  );
+}
 
 function toSessionResponse(session: Record<string, unknown>) {
   return session;
@@ -62,7 +155,6 @@ router.put("/sessions/:sessionId", async (req, res) => {
     if (body.email !== undefined) updateData.email = body.email;
     if (body.phone !== undefined) updateData.phone = body.phone;
     if (body.location !== undefined) updateData.location = body.location;
-    if (body.linkedinUrl !== undefined) updateData.linkedinUrl = body.linkedinUrl;
     if (body.portfolioUrl !== undefined) updateData.portfolioUrl = body.portfolioUrl;
     if (body.summary !== undefined) updateData.summary = body.summary;
     if (body.profileSourceType !== undefined) updateData.profileSourceType = body.profileSourceType;
@@ -88,70 +180,99 @@ router.put("/sessions/:sessionId", async (req, res) => {
   }
 });
 
-router.post("/sessions/:sessionId/import-linkedin", async (req, res) => {
+router.post("/sessions/:sessionId/import-file", upload.single("file"), async (req, res) => {
   try {
-    const body = ImportLinkedinBody.parse(req.body);
-
-    if (!body.rawProfileText || body.rawProfileText.trim().length < 50) {
-      res.status(400).json({ success: false, error: "Cole o texto do seu perfil do LinkedIn para importar." });
+    if (!req.file) {
+      res.status(400).json({ success: false, error: "Nenhum arquivo enviado." });
       return;
     }
 
-    const prompt = `Você é um extrator especializado de perfis profissionais. O usuário colou o texto bruto da página do seu LinkedIn.
+    const { mimetype, buffer, originalname } = req.file;
+    let extractedText = "";
 
-Extraia APENAS as informações que aparecem explicitamente no texto abaixo. Não invente, não complete, não suponha nada que não esteja escrito. Se um campo não aparecer no texto, deixe-o como null ou array vazio.
+    if (mimetype === "application/pdf") {
+      const pdfParseModule = await import("pdf-parse") as unknown as {
+        default?: (input: Buffer) => Promise<{ text: string }>;
+      } & ((input: Buffer) => Promise<{ text: string }>);
+      const pdfParse = pdfParseModule.default ?? pdfParseModule;
+      const parsed = await pdfParse(buffer);
+      extractedText = parsed.text;
+    } else if (
+      mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      mimetype === "application/msword"
+    ) {
+      const result = await mammoth.extractRawText({ buffer });
+      extractedText = result.value;
+    } else if (mimetype.startsWith("image/")) {
+      const base64 = buffer.toString("base64");
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5-mini",
+        max_completion_tokens: 4000,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimetype};base64,${base64}` },
+              },
+              {
+                type: "text",
+                text: "Transcreva todo o texto visível neste currículo exatamente como aparece, incluindo nome, cargo, empresa, período, descrições, skills e formação.",
+              },
+            ],
+          },
+        ],
+      });
+      extractedText = completion.choices[0]?.message?.content ?? "";
+    } else {
+      res.status(400).json({ success: false, error: "Formato não suportado. Envie PDF, DOCX ou imagem." });
+      return;
+    }
 
-Texto do perfil LinkedIn:
+    if (!extractedText || extractedText.trim().length < 30) {
+      res.status(422).json({ success: false, error: "Não foi possível ler o conteúdo do arquivo. Tente outro formato." });
+      return;
+    }
+
+    const prompt = `Voce e um extrator especializado de curriculos. Analise o texto abaixo de um curriculo e extraia as informacoes estruturadas.
+
+Extraia APENAS o que esta explicitamente no texto. Nao invente nada. Se um campo nao estiver no texto, use null ou array vazio.
+Nao use valores de exemplo. Nao preencha cargo, empresa, curso, periodo, descricao, skills ou resumo se essas informacoes nao estiverem escritas no texto do curriculo.
+
+Texto do curriculo:
 ---
-${body.rawProfileText.slice(0, 8000)}
+${extractedText.slice(0, 8000)}
 ---
 
-Retorne APENAS um JSON com esta estrutura exata (sem explicações, sem markdown):
+Retorne APENAS um JSON valido, sem explicacoes e sem markdown:
 {
   "fullName": null,
   "currentRole": null,
   "email": null,
   "phone": null,
   "location": null,
-  "linkedinUrl": ${body.linkedinUrl ? `"${body.linkedinUrl}"` : "null"},
   "portfolioUrl": null,
   "summary": null,
-  "experiences": [
-    {
-      "title": "cargo exato",
-      "company": "empresa exata",
-      "period": "período exato (ex: jan 2022 - presente)",
-      "description": "responsabilidades e realizações descritas"
-    }
-  ],
-  "skills": ["lista de skills mencionadas"],
-  "education": [
-    {
-      "degree": "grau e curso exatos",
-      "institution": "instituição exata",
-      "period": "período exato"
-    }
-  ],
-  "certifications": ["certificações mencionadas"],
-  "languages": ["idiomas mencionados"],
+  "experiences": [],
+  "skills": [],
+  "education": [],
+  "certifications": [],
+  "languages": [],
   "projects": []
 }
 
-Regras estritas:
-- Extraia o nome completo do cabeçalho do perfil
-- Extraia o cargo atual ou headline exatamente como aparece
-- Extraia TODAS as experiências listadas, com cargos, empresas, períodos e descrições reais
-- Extraia as skills exatamente como listadas
-- Extraia a formação acadêmica completa
-- NÃO invente informações. Se não estiver no texto, use null ou array vazio.`;
-
+Formato dos itens, quando existirem:
+- experiences: objetos com title, company, period, description
+- education: objetos com degree, institution, period
+- projects: objetos com name, description, url`;
     const completion = await openai.chat.completions.create({
       model: "gpt-5-mini",
       max_completion_tokens: 4000,
       messages: [
         {
           role: "system",
-          content: "Você é um extrator preciso de dados de perfis profissionais. Extrai apenas o que está explicitamente no texto. Nunca inventa ou completa informações ausentes.",
+          content: "Você é um extrator preciso de dados de currículos. Extrai apenas o que está explicitamente no texto. Nunca inventa informações.",
         },
         { role: "user", content: prompt },
       ],
@@ -167,12 +288,24 @@ Regras estritas:
     }
 
     if (profile) {
+      profile = cleanImportedProfile(profile);
+    }
+
+    if (profile && !hasUsefulImportedProfile(profile as ReturnType<typeof cleanImportedProfile>)) {
+      res.status(422).json({
+        success: false,
+        error: "O arquivo foi lido, mas nao encontramos dados profissionais suficientes para preencher automaticamente. Use outro arquivo ou preencha manualmente.",
+      });
+      return;
+    }
+
+    if (profile) {
       await db
         .update(resumeSessionsTable)
         .set({
-          linkedinUrl: (body.linkedinUrl as string) || (profile.linkedinUrl as string) || undefined,
           structuredProfileJson: profile,
-          profileSourceType: "linkedin",
+          rawProfileText: extractedText,
+          profileSourceType: "pdf",
           fullName: (profile.fullName as string) || undefined,
           email: (profile.email as string) || undefined,
           phone: (profile.phone as string) || undefined,
@@ -183,10 +316,11 @@ Regras estritas:
         .where(eq(resumeSessionsTable.id, req.params.sessionId));
     }
 
+    req.log.info({ sessionId: req.params.sessionId, filename: originalname }, "File imported successfully");
     res.json({ success: !!profile, profile: profile || null });
   } catch (err) {
-    req.log.error({ err }, "Error importing LinkedIn");
-    res.json({ success: false, error: "Erro ao processar o perfil. Tente novamente." });
+    req.log.error({ err }, "Error importing file");
+    res.status(500).json({ success: false, error: "Erro ao processar o arquivo. Tente outro formato." });
   }
 });
 
@@ -266,7 +400,6 @@ Retorne APENAS um JSON com esta estrutura:
     "email": "${session.email || ""}",
     "phone": "${session.phone || ""}",
     "location": "${session.location || ""}",
-    "linkedinUrl": "${session.linkedinUrl || ""}",
     "portfolioUrl": "${session.portfolioUrl || ""}",
     "summary": "Resumo profissional otimizado para a vaga...",
     "experiences": [],
@@ -364,9 +497,32 @@ router.get("/sessions/:sessionId/download-pdf", async (req, res) => {
     const template = session.templateChoice || "moderno";
 
     const html = generateResumeHtml(resumeData, template);
-    res.setHeader("Content-Type", "text/html");
-    res.setHeader("Content-Disposition", `attachment; filename="curriculo.html"`);
-    res.send(html);
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
+      const pdf = await page.pdf({
+        format: "A4",
+        printBackground: true,
+        margin: {
+          top: "16mm",
+          right: "14mm",
+          bottom: "16mm",
+          left: "14mm",
+        },
+      });
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="curriculo-otimizado.pdf"`);
+      res.send(Buffer.from(pdf));
+    } finally {
+      await browser.close();
+    }
   } catch (err) {
     req.log.error({ err }, "Error downloading PDF");
     res.status(500).json({ error: "Failed to download" });
@@ -423,7 +579,6 @@ function generateResumeHtml(data: Record<string, unknown> | null, template: stri
       ${data.email ? `<span>✉ ${data.email}</span>` : ""}
       ${data.phone ? `<span>📞 ${data.phone}</span>` : ""}
       ${data.location ? `<span>📍 ${data.location}</span>` : ""}
-      ${data.linkedinUrl ? `<span>🔗 ${data.linkedinUrl}</span>` : ""}
       ${data.portfolioUrl ? `<span>🌐 ${data.portfolioUrl}</span>` : ""}
     </div>
   </header>

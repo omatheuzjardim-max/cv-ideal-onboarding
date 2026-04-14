@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import { FunnelLayout } from "@/components/funnel-layout";
 import { useFunnel } from "@/hooks/use-funnel";
 import { CheckCircle, Download, RefreshCw } from "lucide-react";
+import { getGetSessionQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 function Confetti() {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; color: string; delay: number; size: number }>>([]);
@@ -47,10 +48,11 @@ function Confetti() {
 }
 
 export default function Final() {
-  const [, setLocation] = useLocation();
   const { sessionId, session, resetSession } = useFunnel();
+  const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
+  const [paymentChecks, setPaymentChecks] = useState(0);
 
   const finalResume = session?.finalResumeJson as Record<string, unknown> | null ?? null;
   const isPaid = session?.paymentStatus === "paid";
@@ -59,6 +61,18 @@ export default function Final() {
     const timer = setTimeout(() => setShowConfetti(false), 4000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!sessionId || isPaid) return;
+    if (paymentChecks >= 60) return;
+
+    const timer = window.setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey(sessionId) });
+      setPaymentChecks((count) => count + 1);
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
+  }, [isPaid, paymentChecks, queryClient, sessionId]);
 
   const handleDownload = async () => {
     if (!sessionId || !isPaid) return;
@@ -70,7 +84,7 @@ export default function Final() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "curriculo-otimizado.html";
+        a.download = "curriculo-otimizado.pdf";
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -87,7 +101,11 @@ export default function Final() {
             <span className="text-2xl">⏳</span>
           </div>
           <h1 className="text-xl font-bold text-foreground mb-2">Confirmando pagamento...</h1>
-          <p className="text-sm text-muted-foreground">Aguarde enquanto confirmamos seu pagamento.</p>
+          <p className="text-sm text-muted-foreground">
+            {paymentChecks >= 60
+              ? "Ainda nao recebemos a confirmacao do Stripe. Fale com o suporte e informe o ID do curriculo."
+              : "Aguarde enquanto confirmamos seu pagamento com o Stripe."}
+          </p>
         </div>
       </FunnelLayout>
     );

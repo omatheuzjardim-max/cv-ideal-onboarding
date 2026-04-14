@@ -31,7 +31,6 @@ export interface UpdateSessionBody {
   email?: string | null;
   phone?: string | null;
   location?: string | null;
-  linkedinUrl?: string | null;
   portfolioUrl?: string | null;
   summary?: string | null;
   profileSourceType?: string | null;
@@ -39,11 +38,6 @@ export interface UpdateSessionBody {
   jobTitle?: string | null;
   company?: string | null;
   jobDescription?: string | null;
-}
-
-export interface ImportLinkedinBody {
-  linkedinUrl?: string | null;
-  rawProfileText?: string | null;
 }
 
 export interface Experience {
@@ -71,7 +65,6 @@ export interface StructuredProfile {
   email?: string | null;
   phone?: string | null;
   location?: string | null;
-  linkedinUrl?: string | null;
   portfolioUrl?: string | null;
   summary?: string | null;
   experiences?: Experience[];
@@ -99,7 +92,6 @@ export interface Session {
   email?: string | null;
   phone?: string | null;
   location?: string | null;
-  linkedinUrl?: string | null;
   portfolioUrl?: string | null;
   summary?: string | null;
   profileSourceType?: string | null;

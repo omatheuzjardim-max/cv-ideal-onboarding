@@ -17,6 +17,7 @@ export default function Preview() {
   const { sessionId, session } = useFunnel();
   const createCheckout = useCreateCheckout();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"preview" | "editor">("preview");
 
   const atsScore = session?.atsScore ?? 72;
   const jobAnalysis = session?.jobAnalysisJson as Record<string, unknown> | null ?? null;
@@ -126,7 +127,25 @@ export default function Preview() {
           </div>
         </div>
 
+        <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg border border-border/60 bg-card p-1">
+          {([
+            ["preview", "Previa"],
+            ["editor", "Editor"],
+          ] as const).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`rounded-md py-2 text-xs font-semibold transition-all ${
+                activeTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="relative mb-5 rounded-xl border border-border/60 overflow-hidden">
+          {activeTab === "preview" ? (
           <div className="p-4 blur-sm select-none pointer-events-none" aria-hidden>
             <div className="font-bold text-base text-foreground mb-0.5">{previewResume?.fullName || "Nome do Candidato"}</div>
             <div className="text-xs text-primary mb-2">{previewResume?.currentRole || "Cargo Profissional"}</div>
@@ -148,6 +167,20 @@ export default function Preview() {
               ))}
             </div>
           </div>
+          ) : (
+            <div className="p-4 blur-sm select-none pointer-events-none" aria-hidden>
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase mb-3">Editor bloqueado</div>
+              <div className="space-y-3">
+                <div className="h-9 rounded-lg bg-muted/70" />
+                <div className="h-24 rounded-lg bg-muted/60" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-9 rounded-lg bg-muted/60" />
+                  <div className="h-9 rounded-lg bg-muted/60" />
+                </div>
+                <div className="h-20 rounded-lg bg-muted/50" />
+              </div>
+            </div>
+          )}
 
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px]">
             <div className="text-center p-4">

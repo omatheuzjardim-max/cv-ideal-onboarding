@@ -13,7 +13,6 @@ export * from "./errorResponse";
 export * from "./experience";
 export * from "./generationStatusResponse";
 export * from "./healthStatus";
-export * from "./importLinkedinBody";
 export * from "./importResult";
 export * from "./project";
 export * from "./session";

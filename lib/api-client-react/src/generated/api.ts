@@ -22,7 +22,6 @@ import type {
   ErrorResponse,
   GenerationStatusResponse,
   HealthStatus,
-  ImportLinkedinBody,
   ImportResult,
   Session,
   StripeWebhook200,
@@ -373,93 +372,6 @@ export const useUpdateSession = <
   TContext
 > => {
   return useMutation(getUpdateSessionMutationOptions(options));
-};
-
-/**
- * @summary Import profile from LinkedIn URL
- */
-export const getImportLinkedinUrl = (sessionId: string) => {
-  return `/api/sessions/${sessionId}/import-linkedin`;
-};
-
-export const importLinkedin = async (
-  sessionId: string,
-  importLinkedinBody: ImportLinkedinBody,
-  options?: RequestInit,
-): Promise<ImportResult> => {
-  return customFetch<ImportResult>(getImportLinkedinUrl(sessionId), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(importLinkedinBody),
-  });
-};
-
-export const getImportLinkedinMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof importLinkedin>>,
-    TError,
-    { sessionId: string; data: BodyType<ImportLinkedinBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof importLinkedin>>,
-  TError,
-  { sessionId: string; data: BodyType<ImportLinkedinBody> },
-  TContext
-> => {
-  const mutationKey = ["importLinkedin"];
-  const { mutation: mutationOptions, request: requestOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, request: undefined };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof importLinkedin>>,
-    { sessionId: string; data: BodyType<ImportLinkedinBody> }
-  > = (props) => {
-    const { sessionId, data } = props ?? {};
-
-    return importLinkedin(sessionId, data, requestOptions);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type ImportLinkedinMutationResult = NonNullable<
-  Awaited<ReturnType<typeof importLinkedin>>
->;
-export type ImportLinkedinMutationBody = BodyType<ImportLinkedinBody>;
-export type ImportLinkedinMutationError = ErrorType<unknown>;
-
-/**
- * @summary Import profile from LinkedIn URL
- */
-export const useImportLinkedin = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof importLinkedin>>,
-    TError,
-    { sessionId: string; data: BodyType<ImportLinkedinBody> },
-    TContext
-  >;
-  request?: SecondParameter<typeof customFetch>;
-}): UseMutationResult<
-  Awaited<ReturnType<typeof importLinkedin>>,
-  TError,
-  { sessionId: string; data: BodyType<ImportLinkedinBody> },
-  TContext
-> => {
-  return useMutation(getImportLinkedinMutationOptions(options));
 };
 
 /**
