@@ -191,7 +191,7 @@ router.post("/sessions/:sessionId/import-file", upload.single("file"), async (re
     let extractedText = "";
 
     if (mimetype === "application/pdf") {
-      const pdfParseModule = await import("pdf-parse") as unknown as {
+      const pdfParseModule = await import("pdf-parse/lib/pdf-parse.js") as unknown as {
         default?: (input: Buffer) => Promise<{ text: string }>;
       } & ((input: Buffer) => Promise<{ text: string }>);
       const pdfParse = pdfParseModule.default ?? pdfParseModule;
