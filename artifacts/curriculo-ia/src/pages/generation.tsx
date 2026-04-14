@@ -89,7 +89,7 @@ export default function Generation() {
                 i < stepIdx ? "bg-primary/60" : i === stepIdx ? "bg-primary animate-pulse" : "bg-border"
               }`} />
               <span className={`text-sm ${i === stepIdx ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                {s}{i === stepIdx ? ".".repeat(dotCount) : ""}
+                {i === stepIdx ? `${s}${".".repeat(dotCount)}` : s}
               </span>
             </div>
           ))}
