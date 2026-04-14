@@ -4,17 +4,23 @@ import { db } from "@workspace/db";
 import { resumeSessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("STRIPE_SECRET_KEY is required");
+const stripeKey = process.env.STRIPE_SECRET_KEY;
+
+if (!stripeKey) {
+  console.warn("STRIPE_SECRET_KEY is not set — Stripe routes will return 503 until configured.");
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-04-30.basil",
-});
+const stripe = stripeKey
+  ? new Stripe(stripeKey, { apiVersion: "2025-04-30.basil" })
+  : null;
 
 const router = Router();
 
 router.post("/sessions/:sessionId/checkout", async (req: Request, res: Response) => {
+  if (!stripe) {
+    res.status(503).json({ error: "Payment not configured" });
+    return;
+  }
   try {
     const [session] = await db
       .select()
@@ -78,6 +84,10 @@ router.post("/sessions/:sessionId/checkout", async (req: Request, res: Response)
 });
 
 router.post("/stripe/webhook", async (req: Request, res: Response) => {
+  if (!stripe) {
+    res.status(503).json({ error: "Payment not configured" });
+    return;
+  }
   const sig = req.headers["stripe-signature"];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
