@@ -310,8 +310,11 @@ components:
       properties:
         linkedinUrl:
           type: string
-      required:
-        - linkedinUrl
+          nullable: true
+        rawProfileText:
+          type: string
+          nullable: true
+          description: Raw text pasted from the LinkedIn profile page for accurate extraction
 
     ImportResult:
       type: object

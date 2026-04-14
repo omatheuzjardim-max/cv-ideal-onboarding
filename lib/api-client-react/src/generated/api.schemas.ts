@@ -42,7 +42,8 @@ export interface UpdateSessionBody {
 }
 
 export interface ImportLinkedinBody {
-  linkedinUrl: string;
+  linkedinUrl?: string | null;
+  rawProfileText?: string | null;
 }
 
 export interface Experience {

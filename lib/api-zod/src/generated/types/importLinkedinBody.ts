@@ -7,5 +7,6 @@
  */
 
 export interface ImportLinkedinBody {
-  linkedinUrl: string;
+  linkedinUrl?: string | null;
+  rawProfileText?: string | null;
 }

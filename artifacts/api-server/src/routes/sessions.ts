@@ -91,40 +91,74 @@ router.put("/sessions/:sessionId", async (req, res) => {
 router.post("/sessions/:sessionId/import-linkedin", async (req, res) => {
   try {
     const body = ImportLinkedinBody.parse(req.body);
-    const prompt = `You are a professional resume parser. The user has provided their LinkedIn URL: ${body.linkedinUrl}
 
-Since you cannot access the URL directly, generate a realistic professional profile structure that the user can edit. Return a JSON object with this exact structure:
+    if (!body.rawProfileText || body.rawProfileText.trim().length < 50) {
+      res.status(400).json({ success: false, error: "Cole o texto do seu perfil do LinkedIn para importar." });
+      return;
+    }
+
+    const prompt = `Você é um extrator especializado de perfis profissionais. O usuário colou o texto bruto da página do seu LinkedIn.
+
+Extraia APENAS as informações que aparecem explicitamente no texto abaixo. Não invente, não complete, não suponha nada que não esteja escrito. Se um campo não aparecer no texto, deixe-o como null ou array vazio.
+
+Texto do perfil LinkedIn:
+---
+${body.rawProfileText.slice(0, 8000)}
+---
+
+Retorne APENAS um JSON com esta estrutura exata (sem explicações, sem markdown):
 {
-  "fullName": "",
-  "currentRole": "",
-  "email": "",
-  "phone": "",
-  "location": "",
-  "linkedinUrl": "${body.linkedinUrl}",
-  "portfolioUrl": "",
-  "summary": "Professional who is actively growing their career.",
+  "fullName": null,
+  "currentRole": null,
+  "email": null,
+  "phone": null,
+  "location": null,
+  "linkedinUrl": ${body.linkedinUrl ? `"${body.linkedinUrl}"` : "null"},
+  "portfolioUrl": null,
+  "summary": null,
   "experiences": [
-    {"title": "", "company": "", "period": "", "description": ""}
+    {
+      "title": "cargo exato",
+      "company": "empresa exata",
+      "period": "período exato (ex: jan 2022 - presente)",
+      "description": "responsabilidades e realizações descritas"
+    }
   ],
-  "skills": [],
+  "skills": ["lista de skills mencionadas"],
   "education": [
-    {"degree": "", "institution": "", "period": ""}
+    {
+      "degree": "grau e curso exatos",
+      "institution": "instituição exata",
+      "period": "período exato"
+    }
   ],
-  "certifications": [],
-  "languages": ["Português"],
+  "certifications": ["certificações mencionadas"],
+  "languages": ["idiomas mencionados"],
   "projects": []
 }
 
-Fill in what you can infer from the URL path (e.g., /in/joao-silva might suggest a Brazilian professional named João Silva). Return ONLY the JSON, no explanation.`;
+Regras estritas:
+- Extraia o nome completo do cabeçalho do perfil
+- Extraia o cargo atual ou headline exatamente como aparece
+- Extraia TODAS as experiências listadas, com cargos, empresas, períodos e descrições reais
+- Extraia as skills exatamente como listadas
+- Extraia a formação acadêmica completa
+- NÃO invente informações. Se não estiver no texto, use null ou array vazio.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5-mini",
-      max_completion_tokens: 2000,
-      messages: [{ role: "user", content: prompt }],
+      max_completion_tokens: 4000,
+      messages: [
+        {
+          role: "system",
+          content: "Você é um extrator preciso de dados de perfis profissionais. Extrai apenas o que está explicitamente no texto. Nunca inventa ou completa informações ausentes.",
+        },
+        { role: "user", content: prompt },
+      ],
     });
 
     const raw = completion.choices[0]?.message?.content ?? "{}";
-    let profile;
+    let profile: Record<string, unknown> | null = null;
     try {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       profile = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
@@ -136,12 +170,14 @@ Fill in what you can infer from the URL path (e.g., /in/joao-silva might suggest
       await db
         .update(resumeSessionsTable)
         .set({
-          linkedinUrl: body.linkedinUrl,
+          linkedinUrl: (body.linkedinUrl as string) || (profile.linkedinUrl as string) || undefined,
           structuredProfileJson: profile,
           profileSourceType: "linkedin",
-          fullName: profile.fullName || undefined,
-          email: profile.email || undefined,
-          summary: profile.summary || undefined,
+          fullName: (profile.fullName as string) || undefined,
+          email: (profile.email as string) || undefined,
+          phone: (profile.phone as string) || undefined,
+          location: (profile.location as string) || undefined,
+          summary: (profile.summary as string) || undefined,
           updatedAt: new Date(),
         })
         .where(eq(resumeSessionsTable.id, req.params.sessionId));
@@ -150,7 +186,7 @@ Fill in what you can infer from the URL path (e.g., /in/joao-silva might suggest
     res.json({ success: !!profile, profile: profile || null });
   } catch (err) {
     req.log.error({ err }, "Error importing LinkedIn");
-    res.json({ success: false, error: "Failed to import from LinkedIn" });
+    res.json({ success: false, error: "Erro ao processar o perfil. Tente novamente." });
   }
 });
 

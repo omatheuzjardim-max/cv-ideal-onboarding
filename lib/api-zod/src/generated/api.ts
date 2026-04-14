@@ -124,7 +124,8 @@ export const ImportLinkedinParams = zod.object({
 });
 
 export const ImportLinkedinBody = zod.object({
-  linkedinUrl: zod.string(),
+  linkedinUrl: zod.string().nullish(),
+  rawProfileText: zod.string().nullish(),
 });
 
 export const ImportLinkedinResponse = zod.object({
